@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Liam Gallagher Adventure</title>
+<style>
+  body { margin:0; background:#87CEEB; overflow:hidden; font-family:sans-serif;}
+  canvas { display:block; margin:auto; background:#5c94fc; }
+</style>
+</head>
+<body>
+
+<canvas id="game" width="800" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let level = 1;
+
+// PLAYER (Liam)
+const player = {
+  x: 50, y: 300, w: 30, h: 40,
+  dy: 0, gravity: 0.5, jump: -10,
+  grounded: false
+};
+
+// COINS & MONSTERS
+let coins = [];
+let monsters = [];
+
+function loadLevel(lv){
+  coins = [];
+  monsters = [];
+
+  if(lv === 1){
+    coins = [{x:200,y:300},{x:400,y:250},{x:600,y:300}];
+    monsters = [{x:300,y:320,w:30,h:30,dir:1}];
+  }
+  if(lv === 2){
+    coins = [{x:150,y:300},{x:350,y:200},{x:650,y:300}];
+    monsters = [
+      {x:250,y:320,w:30,h:30,dir:1},
+      {x:500,y:320,w:30,h:30,dir:-1}
+    ];
+  }
+}
+
+loadLevel(level);
+
+// CONTROLS
+let keys = {};
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+// UPDATE
+function update(){
+  // MOVE
+  if(keys["ArrowRight"]) player.x += 4;
+  if(keys["ArrowLeft"]) player.x -= 4;
+
+  // JUMP
+  if(keys[" "] && player.grounded){
+    player.dy = player.jump;
+    player.grounded = false;
+  }
+
+  // GRAVITY
+  player.dy += player.gravity;
+  player.y += player.dy;
+
+  // GROUND
+  if(player.y > 300){
+    player.y = 300;
+    player.dy = 0;
+    player.grounded = true;
+  }
+
+  // COIN COLLISION
+  coins = coins.filter(c => {
+    return !(player.x < c.x+20 && player.x+player.w > c.x &&
+             player.y < c.y+20 && player.y+player.h > c.y);
+  });
+
+  // MONSTER MOVE
+  monsters.forEach(m => {
+    m.x += m.dir * 2;
+    if(m.x < 0 || m.x > 770) m.dir *= -1;
+
+    // COLLISION
+    if(player.x < m.x+m.w && player.x+player.w > m.x &&
+       player.y < m.y+m.h && player.y+player.h > m.y){
+       
+       // JUMP ON MONSTER
+       if(player.dy > 0){
+         monsters = monsters.filter(x => x !== m);
+         player.dy = -6;
+       } else {
+         alert("Game Over!");
+         location.reload();
+       }
+    }
+  });
+
+  // NEXT LEVEL
+  if(coins.length === 0){
+    level++;
+    if(level > 2){
+      alert("You Win!");
+      location.reload();
+    } else {
+      player.x = 50;
+      loadLevel(level);
+    }
+  }
+}
+
+// DRAW
+function draw(){
+  ctx.clearRect(0,0,800,400);
+
+  // PLAYER (Liam Gallagher style sederhana)
+  ctx.fillStyle = "black";
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+  ctx.fillStyle = "white";
+  ctx.fillText("Liam", player.x-5, player.y-5);
+
+  // COINS
+  ctx.fillStyle = "gold";
+  coins.forEach(c => {
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, 10, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // MONSTERS
+  ctx.fillStyle = "red";
+  monsters.forEach(m => {
+    ctx.fillRect(m.x, m.y, m.w, m.h);
+  });
+
+  // LEVEL TEXT
+  ctx.fillStyle = "white";
+  ctx.fillText("Level: " + level, 10, 20);
+}
+
+// LOOP
+function gameLoop(){
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+
+</body>
+</html>
